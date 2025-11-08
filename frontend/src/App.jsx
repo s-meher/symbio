@@ -14,7 +14,7 @@ import DashboardLender from './components/DashboardLender';
 
 export default function App() {
   return (
-    <div className="flex min-h-screen w-full items-center justify-center px-4 py-10 md:py-16">
+    <div className="flex min-h-screen w-full items-center justify-center bg-transparent px-4 py-10 text-foreground md:py-16">
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/scan-id" element={<ScanID />} />
