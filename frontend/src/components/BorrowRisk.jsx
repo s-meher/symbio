@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchBorrowRisk, postBorrowDecline } from '../api';
 import { useRequiredUser } from '../hooks/useRequiredUser';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
 
 export default function BorrowRisk() {
   const user = useRequiredUser();
@@ -54,17 +56,21 @@ export default function BorrowRisk() {
 
   if (loading) {
     return (
-      <div className="card">
-        <p>Loading risk...</p>
-      </div>
+      <Card className="mx-auto max-w-xl">
+        <CardContent className="p-6">
+          <p>Loading risk...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="card">
-        <p>{error}</p>
-      </div>
+      <Card className="mx-auto max-w-xl">
+        <CardContent className="p-6">
+          <p className="text-destructive">{error}</p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -73,41 +79,52 @@ export default function BorrowRisk() {
   const showOptions = risk.recommendation === 'yes' || risk.recommendation === 'maybe';
 
   return (
-    <div className="card">
-      <h2>Readiness check</h2>
-      <p>Score: {risk.score}</p>
-      <p>{risk.explanation}</p>
-      <div className="gauge">
-        <div className="gauge-track">
-          <div className="gauge-segment red" />
-          <div className="gauge-segment amber" />
-          <div className="gauge-segment green" />
+    <Card className="mx-auto max-w-xl bg-card/90">
+      <CardHeader>
+        <CardTitle>Readiness check</CardTitle>
+        <p className="text-sm text-muted-foreground">{risk.explanation}</p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div>
+          <p className="text-sm uppercase text-muted-foreground">Score</p>
+          <p className="text-4xl font-semibold">{risk.score}</p>
         </div>
-        <div className="gauge-needle" style={{ left: `calc(${risk.score}% - 2px)` }} />
-      </div>
-      <h3>{risk.recommendation.toUpperCase()}</h3>
-      {showOptions ? (
-        <button className="bubble-btn primary" onClick={() => navigate('/borrow/options')}>
-          See Options
-        </button>
-      ) : (
-        <>
-          <button className="bubble-btn" onClick={handleDecline} disabled={declineLoading}>
-            {declineLoading ? 'Thinking…' : 'Why?'}
-          </button>
-          {decline && (
-            <div>
-              <p>{decline}</p>
-              <div className="inline-actions">
-                <button className="bubble-btn" onClick={() => navigate('/dashboard/borrower')}>
-                  Dashboard
-                </button>
-                <button className="bubble-btn" onClick={() => navigate('/')}>Try later</button>
-              </div>
+        <div>
+          <div className="gauge-track">
+            <div className="h-full flex-1 bg-rose-200" />
+            <div className="h-full flex-1 bg-amber-200" />
+            <div className="h-full flex-1 bg-emerald-200" />
+          </div>
+          <div className="gauge-needle" style={{ left: `calc(${risk.score}% - 2px)` }} />
+        </div>
+        <div className="space-y-2">
+          <p className="text-lg font-semibold">Recommendation: {risk.recommendation.toUpperCase()}</p>
+          {showOptions ? (
+            <Button size="lg" onClick={() => navigate('/borrow/options')}>
+              See options
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <Button variant="outline" onClick={handleDecline} disabled={declineLoading}>
+                {declineLoading ? 'Thinking…' : 'Why?'}
+              </Button>
+              {decline && (
+                <div className="space-y-3 rounded-2xl border-2 border-dashed border-border bg-white/70 p-4 text-sm">
+                  <p>{decline}</p>
+                  <div className="flex flex-wrap gap-3">
+                    <Button variant="outline" onClick={() => navigate('/dashboard/borrower')}>
+                      Dashboard
+                    </Button>
+                    <Button variant="ghost" onClick={() => navigate('/')}>
+                      Try later
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-        </>
-      )}
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

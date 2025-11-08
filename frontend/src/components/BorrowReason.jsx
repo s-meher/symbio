@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { postBorrowReason } from '../api';
 import { useRequiredUser } from '../hooks/useRequiredUser';
 import { setSessionValue } from '../session';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Textarea } from './ui/textarea';
+import { Button } from './ui/button';
 
 export default function BorrowReason() {
   const navigate = useNavigate();
@@ -34,13 +37,23 @@ export default function BorrowReason() {
   if (!user) return null;
 
   return (
-    <form className="card" onSubmit={handleNext}>
-      <h2>What do you need the money for?</h2>
-      <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Pay down bills, cover tuition, etc." />
-      {error && <p>{error}</p>}
-      <button className="bubble-btn primary" type="submit" disabled={loading}>
-        {loading ? 'Saving…' : 'Continue'}
-      </button>
+    <form onSubmit={handleNext}>
+      <Card className="mx-auto max-w-xl space-y-4 bg-card/90">
+        <CardHeader>
+          <CardTitle>What do you need the money for?</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Pay down bills, cover tuition, etc."
+          />
+          {error && <p className="text-destructive">{error}</p>}
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving…' : 'Continue'}
+          </Button>
+        </CardContent>
+      </Card>
     </form>
   );
 }

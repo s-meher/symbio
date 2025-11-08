@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createUser } from '../api';
 import { getUser, saveUser } from '../storage';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 const DEFAULT_GEO = { lat: 40.35, lng: -74.66 };
 
@@ -37,22 +39,25 @@ export default function ChooseRole() {
   }
 
   return (
-    <div className="card">
-      <h2>Choose your path</h2>
-      <div className="inline-actions">
-        <button className="bubble-btn primary" onClick={handleBorrowing} disabled={loading === 'borrow'}>
-          {loading === 'borrow' ? 'Starting…' : 'Borrowing'}
-        </button>
-        <button className="bubble-btn" onClick={() => navigate('/lender/setup')}>
-          Lending
-        </button>
-      </div>
-      {error && <p>{error}</p>}
-      <div className="bottom-link">
-        <button className="small-link" onClick={handleDashboard}>
+    <Card className="mx-auto max-w-xl bg-card/90">
+      <CardHeader>
+        <CardTitle className="text-3xl">Choose your path</CardTitle>
+        <p className="text-muted-foreground">Bubble buttons match the onboarding sketches.</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <Button className="flex-1" size="lg" onClick={handleBorrowing} disabled={loading === 'borrow'}>
+            {loading === 'borrow' ? 'Starting…' : 'Borrowing'}
+          </Button>
+          <Button className="flex-1" variant="outline" size="lg" onClick={() => navigate('/lender/setup')}>
+            Lending
+          </Button>
+        </div>
+        {error && <p className="text-destructive">{error}</p>}
+        <button type="button" className="text-sm font-semibold underline" onClick={handleDashboard}>
           Dashboard
         </button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

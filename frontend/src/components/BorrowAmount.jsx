@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { postBorrowAmount } from '../api';
 import { useRequiredUser } from '../hooks/useRequiredUser';
 import { setSessionValue } from '../session';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 
 const ENABLE_KNOT_LINK = false;
 
@@ -37,14 +40,20 @@ export default function BorrowAmount() {
   if (!user) return null;
 
   return (
-    <form className="card" onSubmit={handleNext}>
-      <h2>How much do you need?</h2>
-      <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1000" min="0" />
-      {ENABLE_KNOT_LINK && <p className="small-link">Link Knot account (coming soon)</p>}
-      {error && <p>{error}</p>}
-      <button className="bubble-btn primary" type="submit" disabled={loading}>
-        {loading ? 'Saving…' : 'Continue'}
-      </button>
+    <form onSubmit={handleNext}>
+      <Card className="mx-auto max-w-xl bg-card/90">
+        <CardHeader>
+          <CardTitle>How much do you need?</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1000" min="0" />
+          {ENABLE_KNOT_LINK && <p className="text-sm underline">Link Knot account (coming soon)</p>}
+          {error && <p className="text-destructive">{error}</p>}
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving…' : 'Continue'}
+          </Button>
+        </CardContent>
+      </Card>
     </form>
   );
 }

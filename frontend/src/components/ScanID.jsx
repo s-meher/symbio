@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { verifyId } from '../api';
 import { getUser } from '../storage';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 export default function ScanID() {
   const navigate = useNavigate();
@@ -29,22 +31,26 @@ export default function ScanID() {
   }
 
   return (
-    <div className="card">
-      <h2>Scan ID</h2>
-      <p>We do this to verify users; locations we do not sell data.</p>
-      <div className="inline-actions">
-        <button className="bubble-btn" onClick={handleScan} disabled={loading}>
-          {loading ? 'Scanning…' : 'Scan now'}
-        </button>
-        <button
-          className="bubble-btn primary"
-          disabled={status !== 'verified'}
-          onClick={() => navigate('/choose-role')}
-        >
-          Continue
-        </button>
-      </div>
-      {message && <p>{message}</p>}
-    </div>
+    <Card className="mx-auto max-w-lg bg-card/90">
+      <CardHeader>
+        <CardTitle className="text-3xl">Scan ID</CardTitle>
+        <p className="text-muted-foreground">
+          We do this to verify users; locations we do not sell data.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={handleScan} disabled={loading}>
+            {loading ? 'Scanning…' : 'Scan now'}
+          </Button>
+          <Button disabled={status !== 'verified'} onClick={() => navigate('/choose-role')}>
+            Continue
+          </Button>
+        </div>
+        {message && (
+          <p className={status === 'error' ? 'text-destructive' : 'text-emerald-700'}>{message}</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

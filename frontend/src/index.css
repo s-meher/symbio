@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 47 61% 98%;
+    --foreground: 168 24% 15%;
+    --muted: 47 40% 92%;
+    --muted-foreground: 168 14% 30%;
+    --accent: 50 98% 65%;
+    --accent-foreground: 168 24% 15%;
+    --border: 47 45% 80%;
+    --input: 47 45% 80%;
+    --primary: 152 49% 35%;
+    --primary-foreground: 47 61% 98%;
+    --secondary: 26 95% 70%;
+    --secondary-foreground: 168 24% 15%;
+    --destructive: 0 84% 53%;
+    --destructive-foreground: 47 61% 98%;
+    --ring: 152 49% 35%;
+    --card: 47 100% 97%;
+    --card-foreground: 168 24% 15%;
+    --radius: 1.75rem;
+    --font-sans: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    --font-display: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply min-h-screen bg-background text-foreground antialiased;
+    background-image: radial-gradient(circle at 0 0, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+      radial-gradient(circle at 80px 80px, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+      linear-gradient(135deg, rgba(215, 245, 236, 0.9), rgba(255, 247, 204, 0.8), rgba(255, 229, 241, 0.8));
+    background-size: 120px 120px, 120px 120px, 100% 100%;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display font-semibold text-foreground;
+  }
+}
+
+.gauge-track {
+  height: 36px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+}
+
+.gauge-needle {
+  height: 48px;
+  width: 4px;
+  border-radius: 999px;
+  background: #111;
+  position: relative;
+  top: -6px;
+}

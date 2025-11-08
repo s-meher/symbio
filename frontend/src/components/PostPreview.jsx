@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { postFeed } from '../api';
 import { useRequiredUser } from '../hooks/useRequiredUser';
 import { getSessionValue } from '../session';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
 
 export default function PostPreview() {
   const navigate = useNavigate();
@@ -32,17 +36,24 @@ export default function PostPreview() {
   if (!user) return null;
 
   return (
-    <div className="card">
-      <h2>Post Preview</h2>
-      <p>{composed}</p>
-      <div className="checkbox-row">
-        <input id="share" type="checkbox" checked={shareName} onChange={(e) => setShareName(e.target.checked)} />
-        <label htmlFor="share">Share my name in community feed</label>
-      </div>
-      {error && <p>{error}</p>}
-      <button className="bubble-btn primary" onClick={handleShare} disabled={loading}>
-        {loading ? 'Posting…' : 'Post to feed'}
-      </button>
-    </div>
+    <Card className="mx-auto max-w-xl bg-card/90">
+      <CardHeader>
+        <CardTitle>Post preview</CardTitle>
+        <p className="text-sm text-muted-foreground">Shows up at the top of the community feed.</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="rounded-2xl border-2 border-dashed border-border bg-white/80 p-4 text-lg font-semibold">
+          {composed}
+        </p>
+        <div className="flex items-center gap-2">
+          <Checkbox id="share" checked={shareName} onCheckedChange={(val) => setShareName(Boolean(val))} />
+          <Label htmlFor="share">Share my name in community feed</Label>
+        </div>
+        {error && <p className="text-destructive">{error}</p>}
+        <Button onClick={handleShare} disabled={loading}>
+          {loading ? 'Posting…' : 'Post to feed'}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
