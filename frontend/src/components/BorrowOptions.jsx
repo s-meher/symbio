@@ -5,6 +5,8 @@ import { useRequiredUser } from '../hooks/useRequiredUser';
 import { getSessionValue, setSessionValue } from '../session';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Waves, Users, Check, ArrowRight, Share2, Zap } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export default function BorrowOptions() {
@@ -24,7 +26,6 @@ export default function BorrowOptions() {
     async function loadOptions() {
       setLoading(true);
       try {
-        // POST /borrow/options Request: {"user_id":string} Response: {"combos":[{"id":string,"total":number,"parts":[...]}]}
         const resp = await fetchBorrowOptions(user.userId);
         if (mounted) {
           setOptions(resp.combos);
@@ -46,7 +47,6 @@ export default function BorrowOptions() {
     setError('');
     setRequesting(true);
     try {
-      // POST /loans/request Request: {"user_id":string} Response: {"match_id":string,"total_amount":number,"lenders":[...],"risk_score":number,"ai_advice":string}
       const resp = await requestLoan(user.userId);
       setMatch(resp);
       setSessionValue('match_id', resp.match_id);
@@ -66,7 +66,6 @@ export default function BorrowOptions() {
     }
     setTransferMsg('');
     try {
-      // POST /nessie/transfer -> {txn_id,message}
       const resp = await transferNessie(matchId);
       setTransferMsg(`${resp.message} (${resp.txn_id})`);
     } catch (err) {
@@ -78,74 +77,227 @@ export default function BorrowOptions() {
 
   if (loading) {
     return (
-      <Card className="mx-auto max-w-xl">
-        <CardContent className="p-6">
-          <p>Loading options…</p>
+      <Card className="mx-auto max-w-3xl">
+        <CardContent className="p-12 text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="mx-auto mb-4 h-16 w-16"
+          >
+            <Waves className="h-full w-full text-primary" />
+          </motion.div>
+          <p className="text-lg text-muted-foreground">Finding community pools...</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="mx-auto max-w-2xl bg-card/90">
-      <CardHeader>
-        <CardTitle>Community combos</CardTitle>
-        {error && <p className="text-destructive">{error}</p>}
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-4">
-          {options.map((combo) => {
-            const active = selected?.id === combo.id;
-            return (
-              <button
-                key={combo.id}
-                type="button"
-                onClick={() => setSelected(combo)}
-                className={cn(
-                  'w-full rounded-3xl border-2 border-dashed p-4 text-left transition',
-                  active ? 'border-emerald-500 bg-emerald-50' : 'border-border bg-white/80',
-                )}
-              >
-                <p className="text-xl font-semibold">Total ${combo.total}</p>
-                <ul className="mt-2 text-sm text-muted-foreground">
-                  {combo.parts.map((part) => (
-                    <li key={part.lenderId}>
-                      {part.lenderId}: ${part.amount} @ {part.rate}%
-                    </li>
-                  ))}
-                </ul>
-              </button>
-            );
-          })}
-        </div>
-        <Button className="w-full" size="lg" disabled={!selected || requesting} onClick={handleRequest}>
-          {requesting ? 'Requesting…' : 'Request loan'}
-        </Button>
-        {match && (
-          <div className="space-y-3 rounded-3xl border-2 border-emerald-500 bg-emerald-50/70 p-4 text-sm">
-            <p className="text-lg font-semibold">
-              Match #{match.match_id} ready · Risk {match.risk_score}
-            </p>
-            <p>{match.ai_advice}</p>
-            <ul className="list-disc pl-5">
-              {match.lenders.map((l) => (
-                <li key={l.id}>
-                  {l.id}: ${l.amount} @ {l.rate}%
-                </li>
-              ))}
-            </ul>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" onClick={handleTransfer}>
-                Simulate transfer
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/post/preview')}>
-                Share to community (optional)
-              </Button>
-            </div>
-            {transferMsg && <p className="text-muted-foreground">{transferMsg}</p>}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="mx-auto max-w-4xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <Users className="h-8 w-8 text-primary" />
+            Community Pools
+          </CardTitle>
+          {error && (
+            <motion.p 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-destructive font-semibold"
+            >
+              {error}
+            </motion.p>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <AnimatePresence>
+              {options.map((combo, idx) => {
+                const active = selected?.id === combo.id;
+                return (
+                  <motion.div
+                    key={combo.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: idx * 0.1 }}
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelected(combo)}
+                      className={cn(
+                        'group relative w-full overflow-hidden rounded-2xl border-2 p-6 text-left transition-all duration-300',
+                        active 
+                          ? 'border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 shadow-xl shadow-emerald-200/50' 
+                          : 'border-cyan-200 bg-white/90 hover:border-cyan-400 hover:shadow-lg backdrop-blur-sm',
+                      )}
+                    >
+                      {/* Selected indicator */}
+                      <AnimatePresence>
+                        {active && (
+                          <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            exit={{ scale: 0, rotate: 180 }}
+                            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg"
+                          >
+                            <Check className="h-6 w-6" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="mb-3 text-3xl font-black text-primary">
+                            ${combo.total}
+                          </p>
+                          <ul className="space-y-2">
+                            {combo.parts.map((part, partIdx) => (
+                              <motion.li 
+                                key={part.lenderId}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: idx * 0.1 + partIdx * 0.05 }}
+                                className="flex items-center gap-2 text-sm text-muted-foreground"
+                              >
+                                <div className="h-2 w-2 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500" />
+                                <span className="font-semibold">{part.lenderId}:</span>
+                                <span className="font-mono">${part.amount}</span>
+                                <span className="text-xs">@</span>
+                                <span className="font-mono font-bold text-emerald-600">{part.rate}%</span>
+                              </motion.li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      {/* Hover wave effect */}
+                      <motion.div
+                        className="absolute inset-0 -z-10 bg-gradient-to-r from-cyan-100/50 to-blue-100/50"
+                        initial={{ x: '-100%' }}
+                        whileHover={{ x: '100%' }}
+                        transition={{ duration: 0.6 }}
+                      />
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Button 
+              className="w-full group" 
+              size="lg" 
+              disabled={!selected || requesting} 
+              onClick={handleRequest}
+            >
+              {requesting ? (
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="inline-block"
+                >
+                  <Zap className="h-5 w-5" />
+                </motion.span>
+              ) : (
+                <>
+                  <span>Request Pool</span>
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </>
+              )}
+            </Button>
+          </motion.div>
+
+          <AnimatePresence>
+            {match && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                transition={{ type: "spring", stiffness: 200 }}
+              >
+                <div className="overflow-hidden rounded-2xl border-2 border-emerald-400 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 p-6 shadow-xl">
+                  <div className="mb-4 flex items-center gap-3">
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg"
+                    >
+                      <Check className="h-7 w-7" />
+                    </motion.div>
+                    <div>
+                      <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                        Pool Ready
+                      </p>
+                      <p className="text-xl font-black text-primary">
+                        Match #{match.match_id}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4 rounded-xl bg-white/80 p-4 backdrop-blur-sm">
+                    <p className="mb-3 text-base leading-relaxed text-foreground">
+                      {match.ai_advice}
+                    </p>
+                    <div className="space-y-2">
+                      {match.lenders.map((l) => (
+                        <div key={l.id} className="flex items-center gap-2 text-sm">
+                          <div className="h-2 w-2 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500" />
+                          <span className="font-semibold">{l.id}:</span>
+                          <span className="font-mono">${l.amount}</span>
+                          <span className="text-xs">@</span>
+                          <span className="font-mono font-bold text-emerald-600">{l.rate}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleTransfer}
+                      className="flex-1"
+                    >
+                      <Zap className="mr-2 h-4 w-4" />
+                      Simulate Flow
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => navigate('/post/preview')}
+                      className="flex-1"
+                    >
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Share (optional)
+                    </Button>
+                  </div>
+
+                  {transferMsg && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 text-sm text-muted-foreground"
+                    >
+                      {transferMsg}
+                    </motion.p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

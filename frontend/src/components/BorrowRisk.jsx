@@ -4,6 +4,8 @@ import { fetchBorrowRisk, postBorrowDecline } from '../api';
 import { useRequiredUser } from '../hooks/useRequiredUser';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { motion } from 'framer-motion';
+import { TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function BorrowRisk() {
   const user = useRequiredUser();
@@ -20,7 +22,6 @@ export default function BorrowRisk() {
     async function loadRisk() {
       setLoading(true);
       try {
-        // GET /borrow/risk -> {"score":0-100,"label":"low|med|high","explanation":string,"recommendation":"yes|maybe|no"}
         const resp = await fetchBorrowRisk(user.userId);
         if (mounted) {
           setRisk(resp);
@@ -42,7 +43,6 @@ export default function BorrowRisk() {
   async function handleDecline() {
     setDeclineLoading(true);
     try {
-      // POST /borrow/decline -> {"feedback":string}
       const resp = await postBorrowDecline(user.userId);
       setDecline(resp.feedback);
     } catch (err) {
@@ -56,9 +56,16 @@ export default function BorrowRisk() {
 
   if (loading) {
     return (
-      <Card className="mx-auto max-w-xl">
-        <CardContent className="p-6">
-          <p>Loading risk...</p>
+      <Card className="mx-auto max-w-2xl">
+        <CardContent className="p-12 text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="mx-auto mb-4 h-16 w-16"
+          >
+            <TrendingUp className="h-full w-full text-primary" />
+          </motion.div>
+          <p className="text-lg text-muted-foreground">Analyzing your profile...</p>
         </CardContent>
       </Card>
     );
@@ -66,9 +73,12 @@ export default function BorrowRisk() {
 
   if (error) {
     return (
-      <Card className="mx-auto max-w-xl">
-        <CardContent className="p-6">
-          <p className="text-destructive">{error}</p>
+      <Card className="mx-auto max-w-2xl">
+        <CardContent className="p-12">
+          <div className="flex items-center gap-3 text-destructive">
+            <AlertCircle className="h-8 w-8" />
+            <p className="text-lg">{error}</p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -77,54 +87,151 @@ export default function BorrowRisk() {
   if (!risk) return null;
 
   const showOptions = risk.recommendation === 'yes' || risk.recommendation === 'maybe';
+  const getScoreColor = (score) => {
+    if (score >= 70) return 'from-emerald-400 to-teal-500';
+    if (score >= 45) return 'from-amber-400 to-orange-500';
+    return 'from-rose-400 to-red-500';
+  };
 
   return (
-    <Card className="mx-auto max-w-xl bg-card/90">
-      <CardHeader>
-        <CardTitle>Readiness check</CardTitle>
-        <p className="text-sm text-muted-foreground">{risk.explanation}</p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div>
-          <p className="text-sm uppercase text-muted-foreground">Score</p>
-          <p className="text-4xl font-semibold">{risk.score}</p>
-        </div>
-        <div>
-          <div className="gauge-track">
-            <div className="h-full flex-1 bg-rose-200" />
-            <div className="h-full flex-1 bg-amber-200" />
-            <div className="h-full flex-1 bg-emerald-200" />
-          </div>
-          <div className="gauge-needle" style={{ left: `calc(${risk.score}% - 2px)` }} />
-        </div>
-        <div className="space-y-2">
-          <p className="text-lg font-semibold">Recommendation: {risk.recommendation.toUpperCase()}</p>
-          {showOptions ? (
-            <Button size="lg" onClick={() => navigate('/borrow/options')}>
-              See options
-            </Button>
-          ) : (
-            <div className="space-y-3">
-              <Button variant="outline" onClick={handleDecline} disabled={declineLoading}>
-                {declineLoading ? 'Thinking…' : 'Why?'}
-              </Button>
-              {decline && (
-                <div className="space-y-3 rounded-2xl border-2 border-dashed border-border bg-white/70 p-4 text-sm">
-                  <p>{decline}</p>
-                  <div className="flex flex-wrap gap-3">
-                    <Button variant="outline" onClick={() => navigate('/dashboard/borrower')}>
-                      Dashboard
-                    </Button>
-                    <Button variant="ghost" onClick={() => navigate('/')}>
-                      Try later
-                    </Button>
-                  </div>
-                </div>
-              )}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="mx-auto max-w-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <TrendingUp className="h-8 w-8 text-primary" />
+            </motion.div>
+            Water Check
+          </CardTitle>
+          <p className="text-base text-muted-foreground leading-relaxed">{risk.explanation}</p>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {/* Score Display */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+            className="relative"
+          >
+            <div className="text-center">
+              <p className="mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Clarity Score
+              </p>
+              <motion.div
+                className={`mx-auto inline-flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br ${getScoreColor(risk.score)} text-white shadow-2xl`}
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <span className="text-5xl font-black">{risk.score}</span>
+              </motion.div>
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          </motion.div>
+
+          {/* Gauge */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="relative">
+              <div className="gauge-track">
+                <div className="h-full flex-1 bg-gradient-to-r from-rose-300 to-rose-400" />
+                <div className="h-full flex-1 bg-gradient-to-r from-amber-300 to-amber-400" />
+                <div className="h-full flex-1 bg-gradient-to-r from-emerald-300 to-emerald-400" />
+              </div>
+              <motion.div 
+                className="gauge-needle" 
+                style={{ left: `calc(${risk.score}% - 3px)` }}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, type: "spring" }}
+              />
+            </div>
+          </motion.div>
+
+          {/* Recommendation */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="space-y-4"
+          >
+            <div className={`rounded-2xl p-6 ${showOptions ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300'}`}>
+              <div className="flex items-start gap-3">
+                {showOptions ? (
+                  <CheckCircle className="h-6 w-6 text-emerald-600 flex-shrink-0 mt-1" />
+                ) : (
+                  <AlertCircle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-1" />
+                )}
+                <div>
+                  <p className="mb-1 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                    Recommendation
+                  </p>
+                  <p className="text-2xl font-black text-primary">
+                    {risk.recommendation.toUpperCase()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {showOptions ? (
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button 
+                  size="lg" 
+                  className="w-full" 
+                  onClick={() => navigate('/borrow/options')}
+                >
+                  Explore Options
+                </Button>
+              </motion.div>
+            ) : (
+              <div className="space-y-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={handleDecline} 
+                  disabled={declineLoading}
+                >
+                  {declineLoading ? 'Analyzing...' : 'Tell me more'}
+                </Button>
+                {decline && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border-2 border-cyan-200 bg-white/90 p-6 backdrop-blur-sm"
+                  >
+                    <p className="mb-4 text-base leading-relaxed">{decline}</p>
+                    <div className="flex flex-wrap gap-3">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/dashboard/borrower')}
+                      >
+                        View Dashboard
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        onClick={() => navigate('/')}
+                      >
+                        Try Later
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
