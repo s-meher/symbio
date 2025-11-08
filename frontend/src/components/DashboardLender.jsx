@@ -4,6 +4,7 @@ import { fetchLenderDashboard } from '../api';
 import { useRequiredUser } from '../hooks/useRequiredUser';
 import { Card } from './ui/card';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { FinanceBotPanel } from './FinanceBot';
 
 export default function DashboardLender() {
   const user = useRequiredUser();
@@ -38,17 +39,24 @@ export default function DashboardLender() {
         </TabsList>
       </Tabs>
       {error && <p className="text-destructive">{error}</p>}
-      {data && (
-        <div className="grid gap-4">
+      <div className="grid gap-4">
+        {data ? (
+          <>
+            <Card className="rounded-3xl border-2 border-dashed border-border bg-white/80 p-6 text-lg font-semibold">
+              Next payment: ${data.next_payment.amount} in {data.next_payment.due_in_weeks}{' '}
+              {data.next_payment.due_in_weeks === 1 ? 'week' : 'weeks'}
+            </Card>
+            <Card className="rounded-3xl border-2 border-dashed border-border bg-white/80 p-6 text-lg font-semibold">
+              Expected revenue: ${data.expected_revenue_year} over the next year
+            </Card>
+          </>
+        ) : (
           <Card className="rounded-3xl border-2 border-dashed border-border bg-white/80 p-6 text-lg font-semibold">
-            Next payment: ${data.next_payment.amount} in {data.next_payment.due_in_weeks}{' '}
-            {data.next_payment.due_in_weeks === 1 ? 'week' : 'weeks'}
+            Gathering your lending sunshine…
           </Card>
-          <Card className="rounded-3xl border-2 border-dashed border-border bg-white/80 p-6 text-lg font-semibold">
-            Expected revenue: ${data.expected_revenue_year} over the next year
-          </Card>
-        </div>
-      )}
+        )}
+        <FinanceBotPanel role="lender" />
+      </div>
     </div>
   );
 }
