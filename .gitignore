@@ -1,0 +1,9 @@
+# env secrets
+.env
+*.env.local
+
+# node/python artifacts
+node_modules/
+dist/
+.venv/
+__pycache__/
