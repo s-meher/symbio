@@ -9,9 +9,6 @@
 > Interest rates are **capped at the national average bank rate** (default: 9.5%) — no predatory Klarna-style gouging.  
 > Lenders bid the lowest rate they’re willing to accept, borrowers pick their amount, and our **AI algorithm stitches together multiple offers** to fund the exact need.
 
-![Symbio Flow](https://via.placeholder.com/1200x600/0f766e/ffffff?text=Community+Lending+Meets+AI+Fairness)  
-*From need → AI vetting → multi-lender match → secure repayment — all in one transparent flow.*
-
 ---
 
 ## 💡 Why Symbio Is a Game Changer
@@ -38,7 +35,7 @@
 
 **Frontend:** React (Vite, Tailwind, shadcn/ui)  
 **Backend:** FastAPI (Python)  
-**APIs:** Knot, Grok, Nessie (optional stubs)  
+**APIs:** Knot, Grok, X
 **Database:** SQL
 
 ---
