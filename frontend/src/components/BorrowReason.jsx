@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createUser, postBorrowReason } from '../api';
 import { useRequiredUser } from '../hooks/useRequiredUser';
@@ -9,6 +9,8 @@ import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
 import { motion } from 'framer-motion';
 import { MessageSquare, ArrowRight, Sparkles, Heart } from 'lucide-react';
+import FlowProgress from './FlowProgress';
+import { BORROWER_FLOW_STEPS } from '../lib/flowSteps';
 
 const suggestions = [
   { icon: '🏠', text: 'Home improvement', value: 'home improvement' },
@@ -25,6 +27,13 @@ export default function BorrowReason() {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const handleProgressSelect = useCallback(
+    (nextStep) => {
+      if (!nextStep?.path) return;
+      navigate(nextStep.path);
+    },
+    [navigate],
+  );
 
   async function handleNext(e) {
     e.preventDefault();
@@ -79,6 +88,12 @@ export default function BorrowReason() {
       transition={{ duration: 0.5 }}
       className="mx-auto w-full max-w-4xl"
     >
+      <FlowProgress
+        steps={BORROWER_FLOW_STEPS}
+        activeStep="reason"
+        label="Borrower journey"
+        onStepSelect={handleProgressSelect}
+      />
       <Card className="relative overflow-visible">
         {/* Floating decorations */}
         <motion.div
