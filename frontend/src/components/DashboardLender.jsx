@@ -6,13 +6,18 @@ import { useRequiredUser } from '../hooks/useRequiredUser';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 export default function DashboardLender() {
   const user = useRequiredUser();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+
+  const currencyTickFormatter = (value) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return '';
+    return `$${Math.round(numericValue).toLocaleString()}`;
+  };
 
   useEffect(() => {
     if (!user?.userId) return;
@@ -34,7 +39,7 @@ export default function DashboardLender() {
     if (!data) return [];
     const annualRevenue = Number(data.expected_revenue_year) || 0;
     const monthlyRevenue = annualRevenue / 12;
-    return Array.from({ length: 6 }, (_, index) => ({
+    return Array.from({ length: 12 }, (_, index) => ({
       label: `Month ${index + 1}`,
       revenue: Math.round(monthlyRevenue * (index + 1)),
       reinvest: Math.round((monthlyRevenue * (index + 1)) * 0.35),
@@ -43,11 +48,19 @@ export default function DashboardLender() {
 
   const paymentPipeline = useMemo(() => {
     if (!data) return [];
+    const annualRevenue = Number(data.expected_revenue_year) || 0;
     const nextAmount = Number(data.next_payment?.amount) || 0;
-    return Array.from({ length: 8 }, (_, index) => ({
-      label: `Week ${index + 1}`,
-      repayments: Math.round(nextAmount * (1 - Math.min(index * 0.08, 0.4))),
-    }));
+    const baselinePool = annualRevenue > 0 ? annualRevenue : nextAmount * 12;
+    if (baselinePool <= 0) return [];
+    const monthlyRepayment = baselinePool / 12;
+    return Array.from({ length: 12 }, (_, index) => {
+      const taper = 1 - Math.min(index * 0.035, 0.28);
+      const projectedRepayment = Math.max(monthlyRepayment * taper, monthlyRepayment * 0.6);
+      return {
+        label: `Month ${index + 1}`,
+        repayments: Math.round(projectedRepayment),
+      };
+    });
   }, [data]);
 
   const revenueChartConfig = {
@@ -68,30 +81,21 @@ export default function DashboardLender() {
             Monitor repayments, forecast revenue, and support more borrowers.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={() => navigate('/dashboard')}>
             Dashboard home
           </Button>
-          <Button onClick={() => navigate('/dashboard/borrower')}>Switch to borrowing</Button>
+          <Button variant="default" onClick={() => navigate('/dashboard/borrower')}>
+            Borrower dashboard
+          </Button>
         </div>
       </div>
-
-      <Tabs value="lender" className="w-full">
-        <TabsList className="w-full justify-start gap-2 rounded-2xl bg-muted p-1">
-          <TabsTrigger value="borrower" className="flex-1" onClick={() => navigate('/dashboard/borrower')}>
-            Borrowing
-          </TabsTrigger>
-          <TabsTrigger value="lender" className="flex-1">
-            Lending
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       {error && <p className="text-destructive">{error}</p>}
       <div className="grid gap-4">
         {data ? (
           <>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Card className="rounded-3xl border-2 border-dashed border-border bg-white/80 p-6 text-lg font-semibold">
                 Next payment: ${data.next_payment.amount} in {data.next_payment.due_in_weeks}{' '}
                 {data.next_payment.due_in_weeks === 1 ? 'week' : 'weeks'}
@@ -110,7 +114,7 @@ export default function DashboardLender() {
                   {revenueForecast.length ? (
                     <ChartContainer config={revenueChartConfig} className="h-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={revenueForecast} margin={{ left: 0, right: 0, top: 8, bottom: 0 }}>
+                        <AreaChart data={revenueForecast} margin={{ left: 16, right: 8, top: 8, bottom: 0 }}>
                           <defs>
                             <linearGradient id="fill-revenue-lender" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.5} />
@@ -123,7 +127,13 @@ export default function DashboardLender() {
                           </defs>
                           <CartesianGrid strokeDasharray="4 8" vertical={false} />
                           <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                          <YAxis width={0} tickLine={false} axisLine={false} />
+                          <YAxis
+                            tickFormatter={currencyTickFormatter}
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            width={80}
+                          />
                           <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
                           <Area
                             type="monotone"
@@ -143,6 +153,16 @@ export default function DashboardLender() {
                           />
                         </AreaChart>
                       </ResponsiveContainer>
+                      <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--color-revenue)' }} />
+                          <span>{revenueChartConfig.revenue.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--color-reinvest)' }} />
+                          <span>{revenueChartConfig.reinvest.label}</span>
+                        </div>
+                      </div>
                     </ChartContainer>
                   ) : (
                     <p className="text-sm text-muted-foreground">Projecting revenue curve…</p>
@@ -152,13 +172,13 @@ export default function DashboardLender() {
               <Card className="rounded-3xl border border-border/60 bg-white/90 shadow-sm">
                 <CardHeader>
                   <CardTitle>Repayment pipeline</CardTitle>
-                  <CardDescription>Weekly repayments trending across active pools</CardDescription>
+                  <CardDescription>Monthly repayments trending across active pools</CardDescription>
                 </CardHeader>
                 <CardContent className="h-[300px]">
                   {paymentPipeline.length ? (
                     <ChartContainer config={pipelineChartConfig} className="h-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={paymentPipeline} margin={{ left: 0, right: 0, top: 8, bottom: 0 }}>
+                        <AreaChart data={paymentPipeline} margin={{ left: 16, right: 8, top: 8, bottom: 0 }}>
                           <defs>
                             <linearGradient id="fill-repayments-lender" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="var(--color-repayments)" stopOpacity={0.45} />
@@ -167,7 +187,13 @@ export default function DashboardLender() {
                           </defs>
                           <CartesianGrid strokeDasharray="4 8" vertical={false} />
                           <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                          <YAxis width={0} tickLine={false} axisLine={false} />
+                          <YAxis
+                            tickFormatter={currencyTickFormatter}
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            width={80}
+                          />
                           <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
                           <Area
                             type="monotone"

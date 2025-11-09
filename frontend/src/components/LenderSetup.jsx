@@ -11,7 +11,7 @@ import { Users, TrendingUp, ArrowRight, Sparkles, DollarSign, Percent } from 'lu
 import FlowProgress from './FlowProgress';
 import { LENDER_FLOW_STEPS } from '../lib/flowSteps';
 
-const capitalSuggestions = [1000, 2500, 5000, 10000];
+const capitalSuggestions = [500, 1000, 2500, 5000];
 const rateSuggestions = [2, 3, 4, 5];
 
 export default function LenderSetup() {

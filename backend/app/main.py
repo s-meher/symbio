@@ -17,10 +17,11 @@ import os
 import random
 import re
 import string
+import math
 from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional,Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 import requests
@@ -682,6 +683,72 @@ def _get_borrow_amount(user_id: str) -> Optional[float]:
     return row["amount"] if row else None
 
 
+def _create_payment_schedule(user_id: str, total_amount: float) -> None:
+    if total_amount <= 0:
+        database.execute(
+            "DELETE FROM payment_schedules WHERE user_id = ?",
+            (user_id,),
+        )
+        return
+
+    database.execute(
+        "DELETE FROM payment_schedules WHERE user_id = ?",
+        (user_id,),
+    )
+
+    base_payment = total_amount / 12
+    remaining = total_amount
+    first_due = datetime.utcnow() + timedelta(weeks=4)
+
+    for index in range(12):
+        if index == 11:
+            payment_amount = round(remaining, 2)
+        else:
+            payment_amount = round(min(base_payment, remaining), 2)
+        if payment_amount <= 0:
+            break
+        due_date = (first_due + timedelta(weeks=4 * index)).replace(microsecond=0)
+        database.execute(
+            """
+            INSERT INTO payment_schedules (user_id, due_date, amount, status)
+            VALUES (?, ?, ?, 'pending')
+            """,
+            (user_id, due_date.isoformat(), payment_amount),
+        )
+        remaining = round(max(0.0, remaining - payment_amount), 2)
+        if remaining <= 0:
+            break
+
+
+def _get_next_scheduled_payment(user_id: str) -> Optional[Dict[str, Any]]:
+    row = database.fetchone(
+        """
+        SELECT due_date, amount
+        FROM payment_schedules
+        WHERE user_id = ? AND status = 'pending'
+        ORDER BY due_date ASC
+        LIMIT 1
+        """,
+        (user_id,),
+    )
+    if not row:
+        return None
+    due_date_raw = row["due_date"]
+    try:
+        due_date = datetime.fromisoformat(due_date_raw)
+    except (TypeError, ValueError):
+        return None
+    return {"due_date": due_date, "amount": float(row["amount"])}
+
+
+def _weeks_until_due(due_date: datetime) -> int:
+    delta = due_date - datetime.utcnow()
+    weeks = delta.total_seconds() / (7 * 24 * 60 * 60)
+    if weeks <= 0:
+        return 0
+    return max(0, math.ceil(weeks))
+
+
 def _risk_logic(user_id: str) -> Dict:
     user = _require_user(user_id)
     amount = _get_borrow_amount(user_id) or 0.0
@@ -1112,6 +1179,7 @@ def create_loan_request(payload: LoanRequest):
             risk["score"],
         ),
     )
+    _create_payment_schedule(payload.user_id, amount)
     advice = "Great fit—community lenders ready." if risk["recommendation"] == "yes" else "Matched with cautious lenders."
     tweet_id, tweet_error = _share_loan_on_x(payload.user_id, amount, lender_parts)
     return {
@@ -1147,10 +1215,22 @@ def x_feed(handle: str = "raymo8980", limit: int = 10):
 @app.get("/dashboard/borrower")
 def borrower_dashboard(user_id: str):
     _require_user(user_id)
-    amount = _get_borrow_amount(user_id) or 200.0
-    next_payment = round(min(amount / 10, 50), 2)
+    borrow_amount = _get_borrow_amount(user_id)
+    schedule = None
+    if borrow_amount is not None:
+        schedule = _get_next_scheduled_payment(user_id)
+        if schedule is None:
+            _create_payment_schedule(user_id, borrow_amount)
+            schedule = _get_next_scheduled_payment(user_id)
+    amount = borrow_amount if borrow_amount is not None else 200.0
+    if schedule:
+        next_payment_amount = round(schedule["amount"], 2)
+        due_in_weeks = _weeks_until_due(schedule["due_date"])
+    else:
+        next_payment_amount = round(min(amount / 10, 50), 2)
+        due_in_weeks = 1
     return {
-        "next_payment": {"amount": next_payment, "due_in_weeks": 1},
+        "next_payment": {"amount": next_payment_amount, "due_in_weeks": due_in_weeks},
         "total_owed_year": round(amount, 2),
         "savings_vs_bank_year": round((BANK_AVG_RATE / 100) * amount, 2),
     }
@@ -1160,8 +1240,10 @@ def borrower_dashboard(user_id: str):
 def lender_dashboard(user_id: str):
     user = _require_user(user_id)
     capital = user.get("max_amount", 1500)
+    schedule = _get_next_scheduled_payment(user_id)
+    due_in_weeks = _weeks_until_due(schedule["due_date"]) if schedule else 1
     return {
-        "next_payment": {"amount": round(capital * 0.01, 2), "due_in_weeks": 1},
+        "next_payment": {"amount": round(capital * 0.01, 2), "due_in_weeks": due_in_weeks},
         "expected_revenue_year": round(capital * 0.12, 2),
     }
 

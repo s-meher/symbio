@@ -70,6 +70,15 @@ def init_db() -> None:
                 transactions_json TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS payment_schedules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                due_date TEXT NOT NULL,
+                amount REAL NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending'
+            );
+            CREATE INDEX IF NOT EXISTS idx_payment_schedules_user_due
+                ON payment_schedules (user_id, due_date);
             """
         )
         _ensure_user_columns(conn)

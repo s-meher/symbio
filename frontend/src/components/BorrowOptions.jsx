@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchBorrowOptions, requestLoan, transferNessie } from '../api';
+import { fetchBorrowOptions, requestLoan } from '../api';
 import { useRequiredUser } from '../hooks/useRequiredUser';
-import { getSessionValue, setSessionValue } from '../session';
+import { setSessionValue } from '../session';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,7 +19,6 @@ export default function BorrowOptions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [match, setMatch] = useState(null);
-  const [transferMsg, setTransferMsg] = useState('');
   const [requesting, setRequesting] = useState(false);
   const handleProgressSelect = useCallback(
     (nextStep) => {
@@ -64,21 +63,6 @@ export default function BorrowOptions() {
       setError(err.response?.data?.detail || 'Could not request loan.');
     } finally {
       setRequesting(false);
-    }
-  }
-
-  async function handleTransfer() {
-    const matchId = match?.match_id || getSessionValue('match_id');
-    if (!matchId) {
-      setTransferMsg('Request a match first.');
-      return;
-    }
-    setTransferMsg('');
-    try {
-      const resp = await transferNessie(matchId);
-      setTransferMsg(`${resp.message} (${resp.txn_id})`);
-    } catch (err) {
-      setTransferMsg(err.response?.data?.detail || 'Transfer failed');
     }
   }
 
@@ -303,25 +287,7 @@ export default function BorrowOptions() {
                       <ArrowRight className="mr-2 h-4 w-4" />
                       View dashboard
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleTransfer}
-                      className="flex-1"
-                    >
-                      <Zap className="mr-2 h-4 w-4" />
-                      Simulate Flow
-                    </Button>
                   </div>
-
-                  {transferMsg && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-4 text-sm text-muted-foreground"
-                    >
-                      {transferMsg}
-                    </motion.p>
-                  )}
                 </div>
               </motion.div>
             )}

@@ -11,7 +11,7 @@ import { DollarSign, ArrowRight, TrendingUp, Info, Link2, ShieldCheck } from 'lu
 import FlowProgress from './FlowProgress';
 import { BORROWER_FLOW_STEPS } from '../lib/flowSteps';
 
-const quickAmounts = [500, 1000, 2000, 5000];
+const quickAmounts = [250, 500, 1000, 2000];
 const merchantOptions = [
   { id: 45, name: 'Walmart', blurb: 'Groceries & essentials' },
   { id: 19, name: 'DoorDash', blurb: 'Food & delivery patterns' },
