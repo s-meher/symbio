@@ -88,5 +88,17 @@ npm install
 npm run dev
 ```
 
-The React app runs on **port 3000** and expects the backend on **port 8000**.
-Routes mirror the storyboard order, store the active user in `localStorage`, and use **Tailwind + shadcn/ui** for styling.
+The React app (Vite) runs on port 3000 and expects the backend on 8000. Routes mirror the storyboard order, store the active user in `localStorage`, and use Tailwind + shadcn/ui for styling.
+
+To pull in additional shadcn/ui primitives:
+
+```bash
+cd frontend
+npx shadcn-ui add <component>
+```
+
+## Optional integrations
+
+- **Purchase linking + Grok scoring**: Drop your Knot mock data (already in `backend/app/knot_mock_data/`) and set `GROK_API_KEY` / `GROK_MODEL` so `/borrow/risk` calls xAI Grok with real transaction summaries.
+- **X/Twitter feed**: Set `X_API_KEY` (Bearer token). The backend exposes `GET /x/feed?handle=raymo8980`, which the Community Feed page uses to display the latest tweets inline with community posts.
+- **X auto-sharing**: To broadcast successful matches from a shared account, also set `X_CONSUMER_KEY`, `X_CONSUMER_SECRET`, `X_ACCESS_TOKEN`, and `X_ACCESS_TOKEN_SECRET`. After `/loans/request` succeeds, the backend signs a `POST /2/tweets` call so borrowers see “Shared with @raymo8980” plus a link to the feed.

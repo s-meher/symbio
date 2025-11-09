@@ -6,7 +6,7 @@ import { getSessionValue, setSessionValue } from '../session';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Waves, Users, Check, ArrowRight, Share2, Zap } from 'lucide-react';
+import { Waves, Users, Check, ArrowRight, Zap, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import FlowProgress from './FlowProgress';
 import { BORROWER_FLOW_STEPS } from '../lib/flowSteps';
@@ -276,6 +276,25 @@ export default function BorrowOptions() {
                     </div>
                   </div>
 
+                  <div className="mb-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                    <div className="flex items-center gap-2 text-primary">
+                      <Sparkles className="h-5 w-5" />
+                      <p className="font-semibold">Shared with @raymo8980</p>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {match.x_post_id
+                        ? 'Your approval story was posted to our shared X account so the community can cheer you on.'
+                        : match.x_post_error === 'disabled'
+                          ? 'X posting is disabled in this environment, but your loan is still confirmed.'
+                          : 'We could not post to X this time, but your loan is confirmed.'}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button variant="outline" onClick={() => navigate('/feed')}>
+                        View community feed
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="flex flex-wrap gap-3">
                     <Button 
                       onClick={() => navigate('/dashboard/borrower')}
@@ -291,14 +310,6 @@ export default function BorrowOptions() {
                     >
                       <Zap className="mr-2 h-4 w-4" />
                       Simulate Flow
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => navigate('/post/preview')}
-                      className="flex-1"
-                    >
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Share (optional)
                     </Button>
                   </div>
 

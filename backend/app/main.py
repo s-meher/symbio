@@ -17,15 +17,17 @@ import os
 import random
 import re
 import string
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional,Any, Tuple
 
 import httpx
+import requests
 from fastapi import FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from requests_oauthlib import OAuth1
 
 from . import database
 
@@ -36,6 +38,10 @@ GROK_MODEL = os.getenv("GROK_MODEL", "grok-4-mini")
 GROK_BASE_URL = os.getenv("GROK_BASE_URL", "https://api.x.ai")
 NESSIE_API_KEY = os.getenv("NESSIE_API_KEY")
 X_API_KEY = os.getenv("X_API_KEY")
+X_CONSUMER_KEY = os.getenv("X_CONSUMER_KEY")
+X_CONSUMER_SECRET = os.getenv("X_CONSUMER_SECRET")
+X_ACCESS_TOKEN = os.getenv("X_ACCESS_TOKEN")
+X_ACCESS_TOKEN_SECRET = os.getenv("X_ACCESS_TOKEN_SECRET")
 GEMINI_API_KEY = (
     os.getenv("GEMINI_API_KEY")
     or os.getenv("GOOGLE_API_KEY")
@@ -105,6 +111,9 @@ logger = logging.getLogger(__name__)
 
 database.init_db()
 
+_x_user_cache: Dict[str, Tuple[str, datetime]] = {}
+_x_tweet_cache: Dict[str, Tuple[List[Dict], datetime]] = {}
+
 ID_UPLOAD_DIR = Path(
     os.getenv(
         "ID_UPLOAD_DIR",
@@ -150,6 +159,111 @@ def _safe_document_extension(filename: Optional[str], content_type: str) -> str:
     if suffix in ALLOWED_ID_EXTENSIONS:
         return suffix
     return MIME_EXTENSION_MAP.get(content_type, ".jpg")
+
+
+def _x_headers() -> Dict[str, str]:
+    if not X_API_KEY:
+        raise HTTPException(status_code=503, detail="X integration disabled")
+    return {"Authorization": f"Bearer {X_API_KEY}"}
+
+
+def _get_x_user_id(handle: str) -> str:
+    key = handle.lower()
+    cached = _x_user_cache.get(key)
+    if cached and cached[1] > datetime.utcnow() - timedelta(hours=6):
+        return cached[0]
+    url = f"https://api.x.com/2/users/by/username/{handle}"
+    try:
+        resp = httpx.get(url, headers=_x_headers(), timeout=10)
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to reach X API: {exc}") from exc
+    data = resp.json()
+    user_id = data.get("data", {}).get("id")
+    if not user_id:
+        raise HTTPException(status_code=404, detail="X user not found")
+    _x_user_cache[key] = (user_id, datetime.utcnow())
+    return user_id
+
+
+def _get_x_tweets(handle: str, limit: int) -> List[Dict]:
+    limit = max(1, min(limit, 20))
+    cache_key = f"{handle.lower()}:{limit}"
+    cached = _x_tweet_cache.get(cache_key)
+    if cached and cached[1] > datetime.utcnow() - timedelta(minutes=1):
+        return cached[0]
+
+    user_id = _get_x_user_id(handle)
+    params = {
+        "max_results": str(limit),
+        "tweet.fields": "created_at,public_metrics,text",
+        "exclude": "replies",
+    }
+    url = f"https://api.x.com/2/users/{user_id}/tweets"
+    try:
+        resp = httpx.get(url, headers=_x_headers(), params=params, timeout=10)
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch tweets: {exc}") from exc
+    payload = resp.json()
+    tweets = []
+    for item in payload.get("data", []):
+        metrics = item.get("public_metrics") or {}
+        tweets.append(
+            {
+                "id": item.get("id"),
+                "text": item.get("text"),
+                "created_at": item.get("created_at"),
+                "like_count": metrics.get("like_count"),
+                "retweet_count": metrics.get("retweet_count"),
+                "reply_count": metrics.get("reply_count"),
+                "quote_count": metrics.get("quote_count"),
+            }
+        )
+    _x_tweet_cache[cache_key] = (tweets, datetime.utcnow())
+    return tweets
+
+
+def _can_post_to_x() -> bool:
+    return all([X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET])
+
+
+def _share_loan_on_x(user_id: str, amount: float, lenders: List[Dict]) -> Tuple[Optional[str], Optional[str]]:
+    if not _can_post_to_x():
+        logger.info("X posting disabled; missing OAuth credentials.")
+        return None, "disabled"
+    if amount <= 0:
+        return None, "invalid_amount"
+    suffix = user_id.split("_")[-1][:4]
+    lender_count = len(lenders)
+    text = (
+        f"Symbio update: Princeton is saving together 💚\n"
+        f"A neighbor just borrowed ${amount:,.0f} for educational expenses "
+        f"from {lender_count} local supporter(s). #BorrowLocal #Symbio"
+    )
+    auth = OAuth1(
+        X_CONSUMER_KEY,
+        X_CONSUMER_SECRET,
+        X_ACCESS_TOKEN,
+        X_ACCESS_TOKEN_SECRET,
+    )
+    try:
+        resp = requests.post(
+            "https://api.x.com/2/tweets",
+            json={"text": text},
+            auth=auth,
+            timeout=10,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        body = getattr(getattr(exc, "response", None), "text", "")
+        logger.warning("X share failed for %s: %s | body=%s", user_id, exc, (body or "")[:200])
+        return None, "post_failed"
+    data = resp.json().get("data", {})
+    tweet_id = data.get("id")
+    if tweet_id:
+        logger.info("Shared loan update to X tweet_id=%s user=%s", tweet_id, user_id)
+    return tweet_id, None
 
 
 @lru_cache(maxsize=8)
@@ -999,12 +1113,15 @@ def create_loan_request(payload: LoanRequest):
         ),
     )
     advice = "Great fit—community lenders ready." if risk["recommendation"] == "yes" else "Matched with cautious lenders."
+    tweet_id, tweet_error = _share_loan_on_x(payload.user_id, amount, lender_parts)
     return {
         "match_id": match_id,
         "total_amount": amount,
         "lenders": lender_parts,
         "risk_score": risk["score"],
         "ai_advice": advice,
+        "x_post_id": tweet_id,
+        "x_post_error": tweet_error,
     }
 
 
@@ -1020,46 +1137,10 @@ def mock_transfer(payload: NessieTransferRequest):
     return {"txn_id": txn_id, "message": "Funds transferred (mock)"}
 
 
-# --- Community feed ---
-@app.post("/feed/post")
-def create_feed_post(payload: FeedPostRequest):
-    user = _require_user(payload.user_id)
-    if not payload.text.strip():
-        raise HTTPException(status_code=422, detail="Text required.")
-    post_id = _generate_id("post")
-    timestamp = datetime.utcnow().isoformat()
-    database.execute(
-        """
-        INSERT INTO posts (id, user_id, text, ts, user_role)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (
-            post_id,
-            payload.user_id if payload.share_opt_in else None,
-            payload.text.strip(),
-            timestamp,
-            user["role"],
-        ),
-    )
-    preview = "You shared an update." if payload.share_opt_in else "Someone shared an update."
-    return {"post_id": post_id, "preview": preview}
-
-
-@app.get("/feed")
-def get_feed():
-    rows = database.fetchall(
-        "SELECT id, user_id, text, ts, user_role FROM posts ORDER BY ts DESC",
-    )
-    posts = [
-        {
-            "id": row["id"],
-            "text": row["text"],
-            "ts": row["ts"],
-            "userRole": row["user_role"],
-        }
-        for row in rows
-    ]
-    return {"posts": posts}
+@app.get("/x/feed")
+def x_feed(handle: str = "raymo8980", limit: int = 10):
+    tweets = _get_x_tweets(handle, limit)
+    return {"handle": handle, "tweets": tweets}
 
 
 # --- Dashboards ---
