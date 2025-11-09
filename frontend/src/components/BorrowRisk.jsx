@@ -218,7 +218,9 @@ export default function BorrowRisk() {
                 <div>
                   <p className="text-xs uppercase text-muted-foreground">Essentials share</p>
                   <p className="text-xl font-bold text-primary">
-                    {Math.round((risk.knot_summary.essentials_ratio || 0) * 100)}%
+                    {risk.knot_summary.essentials_ratio != null
+                      ? `${Math.round(risk.knot_summary.essentials_ratio * 100)}%`
+                      : '—'}
                   </p>
                 </div>
               </div>
@@ -246,6 +248,15 @@ export default function BorrowRisk() {
                   <p className="text-2xl font-black text-primary">
                     {risk.recommendation.toUpperCase()}
                   </p>
+                  {risk.analysis_source === 'grok' && (
+                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                      <span className="inline-flex items-center gap-1 font-semibold text-primary">
+                        <Sparkles className="h-3 w-3" />
+                        Grok’s rationale
+                      </span>{' '}
+                      {risk.explanation}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

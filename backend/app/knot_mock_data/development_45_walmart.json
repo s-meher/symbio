@@ -1,221 +1,197 @@
 {
   "merchant": {
-    "id": 4,
-    "name": "Walmart"
+    "merchant_id": 45,
+    "name": "Walmart Supercenter"
   },
   "transactions": [
     {
-      "id": "13da3c28-a068-4642-9ce2-b730cfda5f5f",
-      "external_id": "a9x7bq2lmw5p",
-      "datetime": "2024-11-10T00:00:00+00:00",
-      "url": "https://www.walmart.com/ip/Band-Aid-Brand-Adhesive-Bandages-Variety-Pack-Assorted-Sizes-30-Count/10315643",
+      "id": "wm_txn_2024_01",
+      "external_id": "ord-1001",
+      "datetime": "2024-10-03T14:28:00-04:00",
       "order_status": "COMPLETED",
-      "payment_methods": [
-        {
-          "external_id": "x7q9m2lbw5pazc",
-          "type": "CARD",
-          "brand": "VISA",
-          "last_four": "5690",
-          "name": "Ada's credit card",
-          "transaction_amount": "290.64"
-        }
-      ],
       "price": {
-        "sub_total": "290.64",
-        "adjustments": [
-          {
-            "type": "TAX",
-            "label": "NYC local sales tax",
-            "amount": "25.75"
-          }
-        ],
-        "total": "316.39",
+        "sub_total": "86.42",
+        "total": "92.31",
         "currency": "USD"
       },
       "products": [
-        {
-          "external_id": "10315643",
-          "name": "Band-Aid Adhesive Bandages Variety Pack (Bulk Order)",
-          "url": "https://www.walmart.com/ip/Band-Aid-Brand-Adhesive-Bandages-Variety-Pack-Assorted-Sizes-30-Count/10315643",
-          "quantity": 77,
-          "price": {
-            "sub_total": "290.64",
-            "total": "290.64",
-            "unit_price": "3.77"
-          },
-          "eligibility": ["FSA/HSA"]
-        }
+        { "name": "Great Value Milk 2% - 1 gal" },
+        { "name": "Mixed Vegetables Family Pack" },
+        { "name": "Paper Towels 6-roll" }
       ]
     },
     {
-      "id": "ec3f7eb1-be68-468f-99b3-aa415724e9c2",
-      "external_id": "c7y1h2jbv6tn",
-      "datetime": "2025-01-15T00:00:00+00:00",
-      "url": "https://www.walmart.com/ip/Great-Value-Whole-Vitamin-D-Milk-Gallon-Plastic-Jug-128-fl-oz/10317111",
+      "id": "wm_txn_2024_02",
+      "external_id": "ord-1002",
+      "datetime": "2024-10-05T09:11:00-04:00",
       "order_status": "COMPLETED",
-      "payment_methods": [
-        {
-          "external_id": "c9m2q1jbv3tnaz",
-          "type": "CARD",
-          "brand": "VISA",
-          "last_four": "4912",
-          "name": "Ada's credit card",
-          "transaction_amount": "292.35"
-        }
-      ],
       "price": {
-        "sub_total": "292.35",
-        "adjustments": [
-          {
-            "type": "TAX",
-            "label": "NYC local sales tax",
-            "amount": "24.65"
-          }
-        ],
-        "total": "317.00",
+        "sub_total": "42.17",
+        "total": "45.01",
         "currency": "USD"
       },
       "products": [
-        {
-          "external_id": "10317111",
-          "name": "Great Value Whole Vitamin D Milk Gallon (Case Pack)",
-          "url": "https://www.walmart.com/ip/Great-Value-Whole-Vitamin-D-Milk-Gallon-Plastic-Jug-128-fl-oz/10317111",
-          "quantity": 99,
-          "price": {
-            "sub_total": "292.35",
-            "total": "292.35",
-            "unit_price": "2.96"
-          }
-        }
+        { "name": "Fresh Bakery Bread Pack" },
+        { "name": "Breakfast Cereal Variety" },
+        { "name": "Bananas 3 lb bunch" }
       ]
     },
     {
-      "id": "7c1a0b2f-8f79-43d3-bc85-f7487f53349c",
-      "external_id": "d6z4k3paxm4t",
-      "datetime": "2025-02-05T00:00:00+00:00",
-      "url": "https://www.walmart.com/ip/Great-Value-Large-White-Eggs-12-Count/114886579",
+      "id": "wm_txn_2024_03",
+      "external_id": "ord-1003",
+      "datetime": "2024-10-08T19:45:00-04:00",
       "order_status": "COMPLETED",
-      "payment_methods": [
-        {
-          "external_id": "v8q3r1lbk2fmxz",
-          "type": "CARD",
-          "brand": "MASTERCARD",
-          "last_four": "2372",
-          "name": "Ada's credit card",
-          "transaction_amount": "295.00"
-        }
-      ],
       "price": {
-        "sub_total": "295.00",
-        "adjustments": [
-          {
-            "type": "TAX",
-            "label": "NYC local sales tax",
-            "amount": "22.00"
-          }
-        ],
-        "total": "317.00",
+        "sub_total": "58.24",
+        "total": "62.17",
         "currency": "USD"
       },
       "products": [
-        {
-          "external_id": "114886579",
-          "name": "Great Value Large White Eggs 12 Count (Bulk Cartons)",
-          "url": "https://www.walmart.com/ip/Great-Value-Large-White-Eggs-12-Count/114886579",
-          "quantity": 150,
-          "price": {
-            "sub_total": "295.00",
-            "total": "295.00",
-            "unit_price": "1.97"
-          }
-        }
+        { "name": "Children's fever relief syrup" },
+        { "name": "Vitamin C tablets" },
+        { "name": "Cotton pads" }
       ]
     },
     {
-      "id": "9836d4e4-4abd-45b2-904f-b6be2a32a2b5",
-      "external_id": "e7l2d4kmob4w",
-      "datetime": "2025-03-21T00:00:00+00:00",
-      "url": "https://www.walmart.com/ip/Equate-Ibuprofen-Pain-Reliever-Fever-Reducer-Tablets-200-mg-100-Count/13921047",
+      "id": "wm_txn_2024_04",
+      "external_id": "ord-1004",
+      "datetime": "2024-10-10T12:22:00-04:00",
       "order_status": "COMPLETED",
-      "payment_methods": [
-        {
-          "external_id": "l7n2h4mbq8foxw",
-          "type": "CARD",
-          "brand": "AMEX",
-          "last_four": "8021",
-          "name": "Ada's credit card",
-          "transaction_amount": "289.30"
-        }
-      ],
       "price": {
-        "sub_total": "289.30",
-        "adjustments": [
-          {
-            "type": "TAX",
-            "label": "NYC local sales tax",
-            "amount": "27.70"
-          }
-        ],
-        "total": "317.00",
+        "sub_total": "124.89",
+        "total": "132.48",
         "currency": "USD"
       },
       "products": [
-        {
-          "external_id": "13921047",
-          "name": "Equate Ibuprofen 200mg 100 Count (10-Pack)",
-          "url": "https://www.walmart.com/ip/Equate-Ibuprofen-Pain-Reliever-Fever-Reducer-Tablets-200-mg-100-Count/13921047",
-          "quantity": 139,
-          "price": {
-            "sub_total": "289.30",
-            "total": "289.30",
-            "unit_price": "2.08"
-          }
-        }
+        { "name": "Weekly Household Essentials Bundle" },
+        { "name": "Laundry Detergent 144oz" },
+        { "name": "Dish Soap 3-pack" }
       ]
     },
     {
-      "id": "6543cd21-dd84-4f8f-adb8-09ef2d5c8c67",
-      "external_id": "f8t6m2nbv0yx",
-      "datetime": "2025-04-16T00:00:00+00:00",
-      "url": "https://www.walmart.com/ip/Great-Value-Fat-Free-Milk-Gallon-Plastic-Jug-128-fl-oz/10321531",
+      "id": "wm_txn_2024_05",
+      "external_id": "ord-1005",
+      "datetime": "2024-10-12T17:05:00-04:00",
       "order_status": "COMPLETED",
-      "payment_methods": [
-        {
-          "external_id": "p2y7m0vlb8zxxw",
-          "type": "CARD",
-          "brand": "VISA",
-          "last_four": "6721",
-          "name": "Ada's credit card",
-          "transaction_amount": "291.60"
-        }
-      ],
       "price": {
-        "sub_total": "291.60",
-        "adjustments": [
-          {
-            "type": "TAX",
-            "label": "NYC local sales tax",
-            "amount": "25.40"
-          }
-        ],
-        "total": "317.00",
+        "sub_total": "37.11",
+        "total": "39.49",
         "currency": "USD"
       },
       "products": [
-        {
-          "external_id": "10321531",
-          "name": "Great Value Fat-Free Milk Gallon (Bulk Case)",
-          "url": "https://www.walmart.com/ip/Great-Value-Fat-Free-Milk-Gallon-Plastic-Jug-128-fl-oz/10321531",
-          "quantity": 99,
-          "price": {
-            "sub_total": "291.60",
-            "total": "291.60",
-            "unit_price": "2.96"
-          }
-        }
+        { "name": "Baby wipes 4-pack" },
+        { "name": "Baby food pouches assorted" }
+      ]
+    },
+    {
+      "id": "wm_txn_2024_06",
+      "external_id": "ord-1006",
+      "datetime": "2024-10-15T08:54:00-04:00",
+      "order_status": "COMPLETED",
+      "price": {
+        "sub_total": "212.94",
+        "total": "225.48",
+        "currency": "USD"
+      },
+      "products": [
+        { "name": "Fall school clothing refresh" },
+        { "name": "Kids sneakers size 3" },
+        { "name": "Hooded sweatshirt adult M" }
+      ]
+    },
+    {
+      "id": "wm_txn_2024_07",
+      "external_id": "ord-1007",
+      "datetime": "2024-10-17T20:36:00-04:00",
+      "order_status": "COMPLETED",
+      "price": {
+        "sub_total": "18.77",
+        "total": "20.12",
+        "currency": "USD"
+      },
+      "products": [
+        { "name": "Fresh berries bundle" },
+        { "name": "Greek yogurt 4 pack" }
+      ]
+    },
+    {
+      "id": "wm_txn_2024_08",
+      "external_id": "ord-1008",
+      "datetime": "2024-10-20T13:17:00-04:00",
+      "order_status": "COMPLETED",
+      "price": {
+        "sub_total": "74.65",
+        "total": "79.86",
+        "currency": "USD"
+      },
+      "products": [
+        { "name": "Bathroom essentials set" },
+        { "name": "Hand soap refill" },
+        { "name": "Toilet tissue 12 roll" }
+      ]
+    },
+    {
+      "id": "wm_txn_2024_09",
+      "external_id": "ord-1009",
+      "datetime": "2024-10-22T18:04:00-04:00",
+      "order_status": "COMPLETED",
+      "price": {
+        "sub_total": "31.55",
+        "total": "33.78",
+        "currency": "USD"
+      },
+      "products": [
+        { "name": "Household batteries AA 16ct" },
+        { "name": "LED night light 2-pack" }
+      ]
+    },
+    {
+      "id": "wm_txn_2024_10",
+      "external_id": "ord-1010",
+      "datetime": "2024-10-24T07:42:00-04:00",
+      "order_status": "COMPLETED",
+      "price": {
+        "sub_total": "65.32",
+        "total": "69.41",
+        "currency": "USD"
+      },
+      "products": [
+        { "name": "Healthy lunch supplies" },
+        { "name": "Reusable food containers" }
+      ]
+    },
+    {
+      "id": "wm_txn_2024_11",
+      "external_id": "ord-1011",
+      "datetime": "2024-10-26T16:58:00-04:00",
+      "order_status": "COMPLETED",
+      "price": {
+        "sub_total": "152.80",
+        "total": "161.99",
+        "currency": "USD"
+      },
+      "products": [
+        { "name": "Monthly pantry restock" },
+        { "name": "Coffee beans 5 lb" },
+        { "name": "Cooking oil twin pack" }
+      ]
+    },
+    {
+      "id": "wm_txn_2024_12",
+      "external_id": "ord-1012",
+      "datetime": "2024-10-28T21:14:00-04:00",
+      "order_status": "COMPLETED",
+      "price": {
+        "sub_total": "48.05",
+        "total": "51.33",
+        "currency": "USD"
+      },
+      "products": [
+        { "name": "Pet food dry chicken 12lb" },
+        { "name": "Pet treats assorted" }
       ]
     }
   ],
-  "next_cursor": "<string>",
-  "limit": 5
+  "next_cursor": null,
+  "limit": 12
 }

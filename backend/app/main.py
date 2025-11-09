@@ -153,7 +153,7 @@ def _safe_document_extension(filename: Optional[str], content_type: str) -> str:
 
 
 @lru_cache(maxsize=8)
-def _load_knot_orders(merchant_id: int) -> List[Dict]:
+def _load_knot_orders(merchant_id: int):
     meta = KNOT_MERCHANTS.get(merchant_id)
     if not meta:
         raise KeyError(f"Unknown merchant id {merchant_id}")
@@ -162,6 +162,32 @@ def _load_knot_orders(merchant_id: int) -> List[Dict]:
         raise FileNotFoundError(f"Mock data file missing for merchant {merchant_id}")
     with path.open() as fp:
         return json.load(fp)
+
+
+def _extract_knot_entries(payload) -> List[Dict]:
+    if isinstance(payload, list):
+        return payload
+    if isinstance(payload, dict):
+        for key in ("transactions", "orders", "data", "items"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return value
+        return [payload]
+    return []
+
+
+def _to_float(value) -> float:
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        cleaned = value.replace("$", "").replace(",", "").strip()
+        try:
+            return float(cleaned)
+        except ValueError:
+            return 0.0
+    return 0.0
 
 
 def _is_essential_purchase(text: str) -> bool:
@@ -173,32 +199,50 @@ def _is_essential_purchase(text: str) -> bool:
 
 def _orders_to_transactions(merchant_id: int) -> List[Dict]:
     meta = KNOT_MERCHANTS[merchant_id]
-    orders = _load_knot_orders(merchant_id)
+    payload = _load_knot_orders(merchant_id)
+    orders = _extract_knot_entries(payload)
     transactions: List[Dict] = []
     for order in orders:
+        if not isinstance(order, dict):
+            continue
         amount = float(order.get("price", {}).get("total") or 0)
+        if "price" in order:
+            amount = _to_float(order["price"].get("total") or order["price"].get("sub_total"))
+        elif order.get("amount"):
+            amount = _to_float(order.get("amount"))
         if amount <= 0:
             continue
-        products = order.get("products", [])
-        product_names = [p.get("name", "").strip() for p in products if p.get("name")]
+        products = order.get("products") or order.get("line_items") or []
+        product_names = [p.get("name", "").strip() for p in products if isinstance(p, dict) and p.get("name")]
         description = ", ".join(product_names[:2]) or meta["description"]
         if len(product_names) > 2:
             description += "…"
-        essential = any(
-            _is_essential_purchase(prod.get("name", ""))
-            or any(_is_essential_purchase(tag) for tag in prod.get("eligibility", []))
-            for prod in products
+        posted_at = (
+            order.get("dateTime")
+            or order.get("datetime")
+            or order.get("posted_at")
+            or order.get("timestamp")
+            or datetime.utcnow().isoformat()
+        )
+        status = (
+            order.get("orderStatus")
+            or order.get("order_status")
+            or order.get("category")
+            or "order"
+        )
+        record_id = order.get("externalId") or order.get("external_id") or order.get("id") or _generate_id(
+            f"{meta['slug']}"
         )
         transactions.append(
             {
-                "id": f"{meta['slug']}_{order.get('externalId')}",
+                "id": f"{meta['slug']}_{record_id}",
                 "merchant": meta["merchant_name"],
                 "merchant_id": merchant_id,
                 "amount": round(amount, 2),
-                "category": order.get("orderStatus", "order").lower(),
+                "category": str(status).lower(),
                 "description": description,
-                "is_essential": essential,
-                "posted_at": order.get("dateTime", datetime.utcnow().isoformat()),
+                "is_essential": None,
+                "posted_at": posted_at,
             }
         )
     return transactions
@@ -245,13 +289,12 @@ def _compute_knot_summary(profile: Optional[Dict]) -> Optional[Dict]:
     total = sum(t.get("amount", 0) for t in transactions)
     if total <= 0:
         return None
-    essentials = sum(t.get("amount", 0) for t in transactions if t.get("is_essential"))
     merchants = profile.get("merchants", [])
     return {
         "merchants": [m.get("merchant_name") for m in merchants],
         "avg_monthly_spend": round(total / 3, 2),
         "orders": len(transactions),
-        "essentials_ratio": round(essentials / total, 2) if total else 0,
+        "essentials_ratio": None,
         "last_sync": profile.get("updated_at"),
     }
 
@@ -273,7 +316,7 @@ def _extract_json_blob(text: Optional[str]) -> Optional[Dict]:
         return None
 
 
-def _format_transactions_for_prompt(transactions: List[Dict], limit: int = 5) -> str:
+def _format_transactions_for_prompt(transactions: List[Dict], limit: int = 10) -> str:
     snippets = []
     for txn in transactions[:limit]:
         snippets.append(
@@ -294,10 +337,10 @@ def _call_grok_risk_analysis(
         f"Borrow request amount: ${amount:.2f}",
         f"Linked merchants: {', '.join(knot_summary['merchants'])}" if knot_summary else "No linked merchants.",
         f"Average monthly spend: ${knot_summary['avg_monthly_spend']:.2f}" if knot_summary else "",
-        f"Essentials ratio: {int((knot_summary['essentials_ratio'] or 0) * 100)}%" if knot_summary else "",
         "Recent purchases:",
         _format_transactions_for_prompt(transactions),
-        "Return JSON with keys: score (0-100 integer, higher means safer), recommendation ('yes','maybe','no'), explanation (<=40 words).",
+        "Analyze which purchases look essential (food, housing, medical, childcare, utilities) versus discretionary.",
+        "Return JSON with keys: score (0-100 integer, higher means safer), recommendation ('yes','maybe','no'), explanation (<=40 words), essentials_ratio (0-1 float share of essential spend).",
     ]
     payload = {
         "model": GROK_MODEL,
@@ -320,7 +363,21 @@ def _call_grok_risk_analysis(
         )
         response.raise_for_status()
     except httpx.HTTPError as exc:
-        logger.warning("Grok risk call failed for user %s: %s", user_id, exc)
+        detail = None
+        if exc.response is not None:
+            try:
+                detail = exc.response.text
+            except Exception:  # pragma: no cover
+                detail = None
+        if detail:
+            logger.warning(
+                "Grok risk call failed for user %s: %s | Body: %s",
+                user_id,
+                exc,
+                detail[:300],
+            )
+        else:
+            logger.warning("Grok risk call failed for user %s: %s", user_id, exc)
         return None
 
     data = response.json()
@@ -329,12 +386,15 @@ def _call_grok_risk_analysis(
     if not parsed:
         logger.warning("Grok response unparsable for user %s: %s", user_id, content)
         return None
-    return {
+    result = {
         "score": parsed.get("score"),
         "recommendation": parsed.get("recommendation"),
         "explanation": parsed.get("explanation"),
         "model": data.get("model") or GROK_MODEL,
     }
+    if "essentials_ratio" in parsed:
+        result["essentials_ratio"] = parsed.get("essentials_ratio")
+    return result
 
 
 # ---- Models ----
@@ -470,12 +530,13 @@ def _risk_logic(user_id: str) -> Dict:
     knot_summary = _compute_knot_summary(knot_profile)
     adjustment = 0
     if knot_summary:
-        ess_ratio = knot_summary.get("essentials_ratio") or 0
+        ess_ratio = knot_summary.get("essentials_ratio")
         avg_spend = knot_summary.get("avg_monthly_spend") or 0
-        if ess_ratio >= 0.65:
-            adjustment += 5
-        elif ess_ratio < 0.45:
-            adjustment -= 5
+        if ess_ratio is not None:
+            if ess_ratio >= 0.65:
+                adjustment += 5
+            elif ess_ratio < 0.45:
+                adjustment -= 5
         if avg_spend <= 600:
             adjustment += 3
         elif avg_spend > 900:
@@ -498,8 +559,13 @@ def _risk_logic(user_id: str) -> Dict:
     if knot_summary:
         explanation += (
             f" Linked merchants ({', '.join(knot_summary['merchants'])}) show ${knot_summary['avg_monthly_spend']}"
-            f" monthly spend with {int(knot_summary['essentials_ratio'] * 100)}% essentials."
         )
+        if knot_summary.get("essentials_ratio") is not None:
+            explanation += (
+                f" monthly spend with {int(knot_summary['essentials_ratio'] * 100)}% essentials."
+            )
+        else:
+            explanation += " monthly spend with essentials share under review."
 
     result = {
         "score": score,
@@ -533,6 +599,18 @@ def _risk_logic(user_id: str) -> Dict:
             result["explanation"] = grok_result["explanation"]
         if grok_result.get("model"):
             result["analysis_model"] = grok_result["model"]
+        ratio_val = grok_result.get("essentials_ratio")
+        if ratio_val is not None:
+            try:
+                ratio_float = float(ratio_val)
+                if ratio_float > 1:
+                    ratio_float = ratio_float / 100.0
+                ratio_float = max(0.0, min(1.0, ratio_float))
+                if knot_summary:
+                    knot_summary["essentials_ratio"] = ratio_float
+                    result["knot_summary"] = knot_summary
+            except (TypeError, ValueError):
+                pass
 
     return result
 
@@ -547,13 +625,12 @@ def link_knot_account(payload: KnotLinkRequest):
 
     transactions_new = _orders_to_transactions(payload.merchant_id)
     total = sum(t["amount"] for t in transactions_new)
-    essentials = sum(t["amount"] for t in transactions_new if t["is_essential"])
     merchant_summary = {
         "merchant_id": payload.merchant_id,
         "merchant_name": merchant_meta["merchant_name"],
         "avg_monthly_spend": round(total / 3, 2) if total else 0,
         "orders": len(transactions_new),
-        "essentials_ratio": round(essentials / total, 2) if total else 0,
+        "essentials_ratio": None,
         "last_sync": datetime.utcnow().isoformat(),
     }
 
