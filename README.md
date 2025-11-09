@@ -43,8 +43,8 @@
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/yourusername/FairFlow.git
-cd FairFlow
+git clone https://github.com/yourusername/fairflow.git
+cd fairflow
 ````
 
 ### 2. Environment Setup
